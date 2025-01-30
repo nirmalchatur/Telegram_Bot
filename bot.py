@@ -11,6 +11,7 @@ from dotenv import load_dotenv
 from serpapi import GoogleSearch
 import sys
 from PyPDF2 import PdfReader
+from serpapi import GoogleSearch
 
 # Load environment variables
 load_dotenv()
@@ -73,12 +74,13 @@ def show_main_menu(message):
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
     markup.row("📷 Image Analysis", "🌐 Web Search")
     markup.row("📊 Sentiment Report", "👤 My Profile")
-    markup.row("🛑 Stop Bot")
+    markup.row("💬 Chat with Gemini", "🛑 Stop Bot")
     bot.send_message(
         message.chat.id,
         "🔧 Main Menu - Select an option:",
         reply_markup=markup
     )
+
 
 # ========================
 # MENU HANDLERS
@@ -87,7 +89,7 @@ def show_main_menu(message):
 @bot.message_handler(func=lambda msg: msg.text in [
     "📷 Image Analysis", "🌐 Web Search",
     "📊 Sentiment Report", "👤 My Profile",
-    "🛑 Stop Bot"
+    "💬 Chat with Gemini", "🛑 Stop Bot"
 ])
 def handle_menu_selection(message):
     chat_id = message.chat.id
@@ -104,6 +106,10 @@ def handle_menu_selection(message):
             
         elif message.text == "👤 My Profile":
             show_user_profile(message)
+        
+        elif message.text == "💬 Chat with Gemini":
+            msg = bot.send_message(chat_id, "🤖 Ask anything to Gemini AI:")
+            bot.register_next_step_handler(msg, chat_with_gemini)
             
         elif message.text == "🛑 Stop Bot":
             stop_bot(message)
@@ -111,6 +117,27 @@ def handle_menu_selection(message):
     except Exception as e:
         logging.error(f"Menu handler error: {e}")
         bot.send_message(chat_id, "⚠️ Error processing your request")
+# ========================
+# CHAT WITH GEMINI
+# ========================
+
+def chat_with_gemini(message):
+    chat_id = message.chat.id
+    user_input = message.text.strip()
+
+    if not user_input:
+        bot.send_message(chat_id, "❌ Please enter a valid query.")
+        return
+    
+    try:
+        bot.send_message(chat_id, "🤖 Thinking...")
+
+        response = model.generate_content(user_input)
+        bot.send_message(chat_id, f"💡 Gemini says:\n{response.text}")
+
+    except Exception as e:
+        logging.error(f"Gemini chat error: {e}")
+        bot.send_message(chat_id, "⚠️ Failed to fetch a response from Gemini.")
 
 # ========================
 # WEB SEARCH FUNCTIONALITY
